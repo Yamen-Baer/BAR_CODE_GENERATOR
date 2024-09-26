@@ -6,17 +6,28 @@ import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
 from country_prefix_mapping import country_prefixes
 import os
+import logging
+
+# Set up logging to the user's AppData directory
+user_home = os.path.expanduser("~")
+log_file_path = os.path.join(user_home, "CodeCraft", "app.log")
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
 
 class BarcodeGenerator:
-    def __init__(self, master):
+    def __init__(self, master, main_app):
         self.master = master
+        self.main_app = main_app  # Reference to the main application
         self.master.title("Barcode PDF Generator")
-        self.master.geometry("400x350")
+        self.master.geometry("400x400")
         self.master.resizable(False, False)
         self.master.iconbitmap("code-craft.ico")
 
         # SQLite database setup
-        self.conn = sqlite3.connect('barcodes.db')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, 'barcodes.db')
+
+        self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS barcodes (
@@ -76,6 +87,9 @@ class BarcodeGenerator:
         # Generate Button
         tk.Button(self.master, text="Generate PDF", command=self.generate_pdf, bg="#4CAF50", fg="white").pack(pady=20)
 
+        # Go Back Button
+        tk.Button(self.master, text="Go Back", command=self.go_back, bg="#f44336", fg="white").pack(pady=10)
+
     def validate_number_input(self, action, value_if_allowed):
         if action == '1':  # '1' means the field is being edited
             if value_if_allowed.isdigit():
@@ -129,28 +143,39 @@ class BarcodeGenerator:
         messagebox.showinfo("Success", f"{num_pdfs} PDFs generated with {num_barcodes_per_pdf} barcodes each in {save_directory}.")
 
     def generate_pdf(self):
-        brand_name = self.brand_name_var.get()
-        num_pdfs = self.num_pdfs_var.get()
-        num_barcodes = self.num_barcodes_var.get()
-        selected_country = self.country_var.get()
-        save_directory = self.save_directory_var.get()
+        try:
+            # Your existing code...
+            logging.info("Generating PDF...")
+            # More of your code...
+            brand_name = self.brand_name_var.get()
+            num_pdfs = self.num_pdfs_var.get()
+            num_barcodes = self.num_barcodes_var.get()
+            selected_country = self.country_var.get()
+            save_directory = self.save_directory_var.get()
 
-        # Check if fields are filled
-        if not brand_name:
-            messagebox.showerror("Error", "Please enter a brand name.")
-        elif not num_pdfs or int(num_pdfs) <= 0:
-            messagebox.showerror("Error", "Please enter a valid number of PDFs.")
-        elif not num_barcodes or int(num_barcodes) <= 0:
-            messagebox.showerror("Error", "Please enter a valid number of barcodes per PDF.")
-        elif selected_country == "Select Country":
-            messagebox.showerror("Error", "Please select a country.")
-        elif save_directory == "No folder selected":
-            messagebox.showerror("Error", "Please select a folder to save the PDFs.")
-        else:
-            # Get the country code and prefix
-            prefix = country_prefixes[selected_country]
-            country_code = selected_country.split(" ")[0]  # Adjusted to get the first part as the country code
-            self.generate_multiple_barcodes_pdf(save_directory, country_code, prefix, num_pdfs=int(num_pdfs), brand_name=brand_name, num_barcodes_per_pdf=int(num_barcodes))
+            # Check if fields are filled
+            if not brand_name:
+                messagebox.showerror("Error", "Please enter a brand name.")
+            elif not num_pdfs or int(num_pdfs) <= 0:
+                messagebox.showerror("Error", "Please enter a valid number of PDFs.")
+            elif not num_barcodes or int(num_barcodes) <= 0:
+                messagebox.showerror("Error", "Please enter a valid number of barcodes per PDF.")
+            elif selected_country == "Select Country":
+                messagebox.showerror("Error", "Please select a country.")
+            elif save_directory == "No folder selected":
+                messagebox.showerror("Error", "Please select a folder to save the PDFs.")
+            else:
+                # Get the country code and prefix
+                prefix = country_prefixes[selected_country]
+                country_code = selected_country.split(" ")[0]  # Adjusted to get the first part as the country code
+                self.generate_multiple_barcodes_pdf(save_directory, country_code, prefix, num_pdfs=int(num_pdfs), brand_name=brand_name, num_barcodes_per_pdf=int(num_barcodes))
+        
+        except Exception as e:
+            logging.error(f"Error generating PDF: {e}")
+
+    def go_back(self):
+        self.master.destroy()  # Close the barcode generator window
+        self.main_app.deiconify()  # Show the main application window again
 
     def close(self):
         self.conn.close()

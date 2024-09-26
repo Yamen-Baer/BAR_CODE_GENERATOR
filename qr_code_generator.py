@@ -5,14 +5,22 @@ from reportlab.pdfgen import canvas
 import qrcode
 import tkinter as tk
 from tkinter import filedialog, messagebox
+import logging
+
+# Set up logging to the user's AppData directory
+user_home = os.path.expanduser("~")
+log_file_path = os.path.join(user_home, "CodeCraft", "app.log")
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
 
 class QRCodeGenerator:
     MAX_ENTRIES = 6  # Maximum number of entries allowed
 
-    def __init__(self, master):
+    def __init__(self, master, main_app):
         self.master = master
+        self.main_app = main_app  # Reference to the main application
         self.master.title("QR Code PDF Generator")
-        self.master.geometry("600x500")
+        self.master.geometry("600x550")
         self.master.config(bg="#f0f0f0")
         self.master.resizable(False, False)
         self.master.iconbitmap("code-craft.ico")
@@ -36,6 +44,10 @@ class QRCodeGenerator:
         # Button to generate the PDF
         self.generate_btn = tk.Button(self.master, text="Generate QR Code PDF", command=self.generate_pdf, bg="#2196F3", fg="white", font=("Arial", 10))
         self.generate_btn.pack(pady=10)
+
+        # Go Back Button
+        self.go_back_btn = tk.Button(self.master, text="Go Back", command=self.go_back, bg="#f44336", fg="white", font=("Arial", 10))
+        self.go_back_btn.pack(pady=10)
 
         # Add padding and spacing to organize the layout
         for widget in [self.add_btn, self.generate_btn]:
@@ -84,25 +96,37 @@ class QRCodeGenerator:
         return re.match(regex, url) is not None
 
     def generate_pdf(self):
-        names = [entry[0].get() for entry in self.entries if entry[0].get()]
-        urls = [entry[1].get() for entry in self.entries if entry[1].get()]
+        try:
+            # Your existing code...
+            logging.info("Generating PDF...")
+            # More of your code...
+            
+            names = [entry[0].get() for entry in self.entries if entry[0].get()]
+            urls = [entry[1].get() for entry in self.entries if entry[1].get()]
 
-        if len(names) == 0 or len(urls) == 0 or len(names) != len(urls):
-            messagebox.showerror("Error", "Please fill in all name and URL fields.")
-            return
-
-        # Validate URL format
-        for url in urls:
-            if not self.is_valid_url(url):
-                messagebox.showerror("Error", f"Invalid URL format: {url}")
+            if len(names) == 0 or len(urls) == 0 or len(names) != len(urls):
+                messagebox.showerror("Error", "Please fill in all name and URL fields.")
                 return
 
-        # File saving prompt
-        filename = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
-        if filename:
-            self.generate_qr_codes(names, urls, filename)
+            # Validate URL format
+            for url in urls:
+                if not self.is_valid_url(url):
+                    messagebox.showerror("Error", f"Invalid URL format: {url}")
+                    return
+
+            # File saving prompt
+            filename = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
+            if filename:
+                self.generate_qr_codes(names, urls, filename)
+
+        except Exception as e:
+            logging.error(f"Error generating PDF: {e}")
 
     def generate_qr_codes(self, names, urls, filename):
+        # Create a temporary directory for storing QR code images
+        temp_dir = os.path.join(os.path.expanduser("~"), "CodeCraft", "temp_qr")
+        os.makedirs(temp_dir, exist_ok=True)
+
         c = canvas.Canvas(filename, pagesize=letter)
         x_start, y_start, qr_size, header_offset = 100, 600, 150, 20
 
@@ -111,10 +135,15 @@ class QRCodeGenerator:
             qr.add_data(url)
             qr.make(fit=True)
 
+            # Save QR code image in the temporary directory
+            qr_img_path = os.path.join(temp_dir, f"temp_qr_{idx}.png")
             qr_img = qr.make_image(fill_color="black", back_color="white")
-            qr_img.save(f"temp_qr_{idx}.png")
-            c.drawImage(f"temp_qr_{idx}.png", x_start + (idx % 2) * (qr_size + 50), y_start - (idx // 2) * (qr_size + 100), width=qr_size, height=qr_size)
+            qr_img.save(qr_img_path)
 
+            # Draw the QR code image on the PDF
+            c.drawImage(qr_img_path, x_start + (idx % 2) * (qr_size + 50), y_start - (idx // 2) * (qr_size + 100), width=qr_size, height=qr_size)
+
+            # Add the name under the QR code
             c.setFont("Helvetica", 12)
             c.drawString(x_start + (idx % 2) * (qr_size + 50), y_start - (idx // 2) * (qr_size + 100) - header_offset, "Name: " + names[idx])
 
@@ -122,6 +151,10 @@ class QRCodeGenerator:
 
         # Remove temporary images
         for idx in range(len(urls)):
-            os.remove(f"temp_qr_{idx}.png")
+            os.remove(os.path.join(temp_dir, f"temp_qr_{idx}.png"))
 
         messagebox.showinfo("Success", f"QR Codes PDF saved as {filename}")
+
+    def go_back(self):
+        self.master.destroy()  # Close the barcode generator window
+        self.main_app.deiconify()  # Show the main application window again
