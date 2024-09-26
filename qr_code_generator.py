@@ -15,7 +15,7 @@ class QRCodeGenerator:
         self.master.geometry("600x500")
         self.master.config(bg="#f0f0f0")
         self.master.resizable(False, False)
-        self.master.iconbitmap("bar-qr-generator.ico")
+        self.master.iconbitmap("code-craft.ico")
 
         self.entries = []  # List to store entry fields
 

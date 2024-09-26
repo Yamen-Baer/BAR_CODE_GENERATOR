@@ -13,7 +13,7 @@ class BarcodeGenerator:
         self.master.title("Barcode PDF Generator")
         self.master.geometry("400x350")
         self.master.resizable(False, False)
-        self.master.iconbitmap("bar-qr-generator.ico")
+        self.master.iconbitmap("code-craft.ico")
 
         # SQLite database setup
         self.conn = sqlite3.connect('barcodes.db')

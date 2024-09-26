@@ -6,10 +6,10 @@ class Application:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Barcode and QR Code Generator")
+        self.root.title("Code Craft")
         self.root.geometry("400x230")
         self.root.resizable(False, False)
-        self.root.iconbitmap("bar-qr-generator.ico")
+        self.root.iconbitmap("code-craft.ico")
         self.create_ui()
 
     def create_ui(self):
